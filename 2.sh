@@ -6,6 +6,7 @@ cd secret
 
 python3 success.py > results.txt
 
+cat results.txt
 
 cd ../
 
@@ -22,5 +23,4 @@ python3 client.py submit
 
 
 whoami
-
 
